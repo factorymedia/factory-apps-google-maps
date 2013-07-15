@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Factory::Apps::Google::Maps::VERSION
   spec.authors       = ["Joe Connor"]
   spec.email         = ["joe.connor@factorymedia.com"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
+  spec.description   = %q{Extract the google maps image helpers so they can be reused across applications}
+  spec.summary       = %q{Extract the google maps image helpers so they can be reused across applications}
   spec.homepage      = ""
   spec.license       = "MIT"
 
