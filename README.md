@@ -35,7 +35,7 @@ Options:
 }
 ```
 
-# Mapselect.js
+### Mapselect.js
 
 Provides select box and draggable map view for choosing Lat/Lon positions for models
 
@@ -66,9 +66,6 @@ The example below shows the optimal layout.
 = f.input :lat, as: :hidden, label: "Latitude", input_html: {min: -180, max: 180}
 = f.input :lon, as: :hidden, label: "Longitude", input_html: {min: -180, max: 180}
 ```
-
-
-
 
 
 ## Contributing
