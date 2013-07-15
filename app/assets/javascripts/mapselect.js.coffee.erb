@@ -1,0 +1,145 @@
+$ = jQuery
+
+jQuery ->
+
+  setupMaps  = ->
+    self = @
+    default_center = new google.maps.LatLng(51.517, 0.106)
+
+    loadLocation = ->
+      lat = $('#location_lat').val()
+      lng = $('#location_lon').val()
+      if lat != '' && lng != ''
+        @lat = lat
+        @lng = lng
+        $('#marker-box').remove()
+        @location_loaded = true
+        return true
+      else
+        @lat = default_center.lat()
+        @lng = default_center.lng()
+        return false
+
+    updateLocation = (location) =>
+      @lat = location.lat()
+      @lng = location.lng()
+      $('#location_lat').val(@lat)
+      $('#location_lon').val(@lng)
+
+    placeMarker = (location) ->
+      marker = new google.maps.Marker(
+        position: location,
+        map: self.map,
+        icon:'<%= image_path("marker-24.png") %>',
+        draggable: true
+      )
+
+      @dropped = true
+
+      google.maps.event.addListener(marker, 'dragend', ->
+        updateLocation(marker.getPosition())
+      )
+
+    resizeMap = ->
+      if @lat? && @lng?
+        map.setCenter(new google.maps.LatLng(@lat, @lng))
+      else
+        map.setCenter(default_center)
+
+      google.maps.event.trigger(@map, "resize")
+
+    if @map
+      resizeMap()
+      return
+
+    mapOptions =
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+
+    if loadLocation()
+      mapOptions = $.extend(mapOptions,
+        center: new google.maps.LatLng(@lat, @lng),
+        zoom: 15
+      )
+    else
+      mapOptions = $.extend(mapOptions,
+        center: default_center,
+        zoom: 2
+      )
+
+    @map = new google.maps.Map($("#gmap")[0], mapOptions)
+
+    if @location_loaded
+      placeMarker(new google.maps.LatLng(@lat, @lng))
+
+    input = $('#location_location_name')
+    autocomplete = new google.maps.places.Autocomplete(input[0])
+    autocomplete.bindTo('bounds', @map)
+
+    # Prevent form submission on return key
+    input.keypress (e)->
+      return false if e.keyCode == 13
+
+    google.maps.event.addListener(autocomplete, 'place_changed', ->
+      unless self.dropped
+        input.className = ''
+        place = autocomplete.getPlace()
+        if (!place.geometry)
+          input.className = 'notfound'
+          return
+
+        if (place.geometry.viewport)
+          map.fitBounds(place.geometry.viewport)
+        else
+          map.setCenter(place.geometry.location)
+          map.setZoom(16)
+
+        updateLocation(place.geometry.location)
+    )
+
+    @overlay = new google.maps.OverlayView()
+    overlay.draw = ->
+    overlay.setMap(@map)
+
+    $("#location-draggable").draggable(
+      containment: '#location-bounds',
+      revert: true
+    )
+
+    $('#gmap').droppable(
+      accept: '#location-draggable',
+      drop: (e, ui)->
+        ui.draggable.draggable('option', 'revert', false)
+        $('#marker-box').slideUp('slow')
+
+        $map = $("#gmap div:first-child")
+        map_position = $map.offset()
+        map_opts =
+          x: map_position.left,
+          y: map_position.top
+
+        draggable_opts =
+          x: ui.draggable.offset().left + ui.draggable.width() / 2,
+          y: ui.draggable.offset().top + ui.draggable.height()
+
+        point = new google.maps.Point(draggable_opts.x - map_opts.x, draggable_opts.y - map_opts.y)
+        ll = self.overlay.getProjection().fromContainerPixelToLatLng(point)
+        placeMarker(ll)
+    )
+
+    # Re-centre the map when receiving an update event
+    $('#gmap').on 'update', =>
+      setTimeout(->
+        @map.setCenter(new google.maps.LatLng(@lat, @lng))
+      , 1)
+
+  # Make the callback global
+  window.setupMaps_cb = ->
+    setupMaps()
+
+  loadMapsApi = ->
+    script = document.createElement("script")
+    script.type = "text/javascript"
+    script.src = "//maps.googleapis.com/maps/api/js?key=AIzaSyAOLt85bqj-R1UhRhGad2vh8rkp9PsrUNg&sensor=false&libraries=places&callback=setupMaps_cb"
+    $('body').append(script)
+
+  loadMapsApi() if $('#gmap').length > 0
